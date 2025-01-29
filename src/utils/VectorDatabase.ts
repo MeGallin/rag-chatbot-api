@@ -1,24 +1,43 @@
-import { PineconeClient } from '@pinecone-database/pinecone';
+import {
+  Pinecone,
+  type PineconeConfiguration,
+} from '@pinecone-database/pinecone';
+
+import { OpenAI } from 'openai';
 
 export class VectorDatabase {
-  private client: PineconeClient;
+  private client: Pinecone;
+  private openAI: OpenAI;
 
   constructor() {
-    this.client = new PineconeClient();
-    this.client.init({
-      apiKey: process.env.PINECONE_API_KEY,
-      environment: process.env.PINECONE_ENVIRONMENT,
-    });
+    const config: PineconeConfiguration = {
+      apiKey: process.env.PINECONE_API_KEY || '',
+    };
+    this.client = new Pinecone(config);
+    this.openAI = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || '' });
   }
 
   async search(query: string): Promise<string[]> {
-    const index = this.client.Index('your-index-name');
+    // Generate embedding vector for the query using OpenAI
+    const embeddingResponse = await this.openAI.embeddings.create({
+      model: 'text-embedding-ada-002',
+      input: query,
+    });
+
+    const embeddingVector = embeddingResponse.data[0].embedding;
+
+    const index = this.client.Index('ragchatbot'); // Replace with your index name
     const response = await index.query({
-      query: query,
+      vector: embeddingVector,
       topK: 5,
       includeMetadata: true,
     });
-    return response.matches.map((match: { metadata: { text: any; }; }) => match.metadata.text);
+
+    // Safely handle matches and metadata
+    return response.matches
+      .filter((match) => typeof match.metadata?.text === 'string') // Ensure metadata.text is a string
+      .map((match) => match.metadata?.text as string); // Safely cast to string
   }
 }
+
 export default VectorDatabase;
