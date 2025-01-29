@@ -28,6 +28,9 @@ app.post('/chat', async (req: Request, res: Response): Promise<void> => {
   }
 });
 
+// Export the app for testing purposes
+export default app;
+
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });
