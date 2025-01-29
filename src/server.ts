@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
+import cors from 'cors';
 import Supervisor from './supervisor/Supervisor';
 
 dotenv.config();
@@ -8,6 +9,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 const supervisor = new Supervisor();
 
+app.use(cors()); // Enable CORS
 app.use(express.json());
 
 app.post('/chat', async (req: Request, res: Response): Promise<void> => {
